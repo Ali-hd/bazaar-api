@@ -14,6 +14,10 @@ var postRout = require('./routes/post')
 server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
 
+server.get('/',async(req, res, next) =>{
+    res.send("hello")
+   });
+
 server.use(cors())
 server.use(passport.initialize())
 
