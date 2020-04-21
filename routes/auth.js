@@ -18,9 +18,9 @@ router.post('/login', function(req,res,next){
             if(err){
                 res.send(err)
             }
-            //token info
-            let userData = { id:user._id , isadmin : user.isadmin, username:user.username }
-            const token = jwt.sign(userData,'secret',{expiresIn: 60 * 60});
+            
+            let userData = { id:user._id , admin : user.admin, username:user.username }
+            const token = jwt.sign(userData,process.env.JWT_SECRET,{expiresIn: 60 * 60 * 24});
 
             return res.json({token});
         });
@@ -37,10 +37,12 @@ router.post('/register', function(req,res,next){
     description : req.body.description,
     profileImg : req.body.profileimg ,
     phoneNumber : req.body.phonenumber,
-    userName : req.body.username,
+    username : req.body.username,
     city : req.body.city,
-    isadmin: false,
+    admin: false,
     }
+
+    Object.keys(newUser).forEach(key => newUser[key] === undefined && delete newUser[key])
 
     User.findOne({email:req.body.email})
     .then(user=>{
@@ -48,8 +50,7 @@ router.post('/register', function(req,res,next){
             bcrypt.hash(req.body.password , 10 ,(err, hash)=>{
                 newUser.password = hash
                 User.create(newUser)
-                //user created 
-                .then(user => res.json({msg: 'created successfully',userInf:newUser}))
+                .then(() => res.json({msg: 'created successfully'}))
                 .catch(err =>res.send(err))
             })
         }else{ res.json({msg:'email already used'})}

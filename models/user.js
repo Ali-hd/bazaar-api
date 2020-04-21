@@ -3,7 +3,7 @@ const Schema = mongoose.Schema
 
 
 const userSchema = new Schema({
-    userName:{
+    username:{
         default: "",
         required: true,
         unique: true,
@@ -48,7 +48,7 @@ const userSchema = new Schema({
         required: false , 
         type: String
     },
-    isadmin:{
+    admin:{
         default: false,
         type: Boolean
     },
@@ -59,10 +59,6 @@ const userSchema = new Schema({
     followers:[{ 
         type:Schema.Types.ObjectId,
         ref:'User'
-    }],
-    purchesedorder:[{ 
-        type:Schema.Types.ObjectId,
-        ref:'Post'
     }],
     posts:[{ 
         type:Schema.Types.ObjectId,
@@ -76,6 +72,10 @@ const userSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:'Post'
     }],
+    ratings:[{
+        star: String,
+        description: String
+    }]
 
 },{timestamps: true},)
 

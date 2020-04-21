@@ -21,13 +21,13 @@ server.get('/',async(req, res, next) =>{
 server.use(cors())
 server.use(passport.initialize())
 
-server.use('/auth',authRout)
-server.use('/post',postRout)
-// server.use('/user', userRout)
-
+mongoose.set('useCreateIndex', true)
 server.use(methodOverride('_method'))
 
-mongoose.set('useCreateIndex', true);
+server.use('/auth',authRout)
+server.use('/post',postRout)
+server.use('/user', userRout)
+
 mongoose.connect(
     process.env.DB_AUTH, {useNewUrlParser:true, useUnifiedTopology: true })
 .then(console.log('MongoDB Connected!'))

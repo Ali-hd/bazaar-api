@@ -29,7 +29,7 @@ passport.use(new LocalStrategy({
 
 passport.use(new JwtStrategy({
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey   : 'secret'
+    secretOrKey   : process.env.JWT_SECRET
 },function(jwtPayload, cb){
     return User.findById(jwtPayload.id)
         .then(user=>{
