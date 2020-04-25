@@ -22,7 +22,7 @@ router.post('/login', function(req,res,next){
             let userData = { id:user._id , admin : user.admin, username:user.username }
             const token = jwt.sign(userData,process.env.JWT_SECRET,{expiresIn: 60 * 60 * 24});
 
-            return res.json({token});
+            return res.json({token, user});
         });
     })(req, res);
 })
@@ -55,6 +55,50 @@ router.post('/register', function(req,res,next){
             })
         }else{ res.json({msg:'email already used'})}
     }).catch(err=>res.send(err))
+})
+
+
+router.post('/:username', passport.authenticate('jwt', {session: false}), async function(req,res,next){
+    const token = req.headers.authorization.split(' ')[1]
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+    if(req.body.type == 'change password' && req.params.username == decoded.username){
+        try{
+            let user = await User.findOne({username:req.params.username})
+            const password = req.body.password
+            const newPassword = req.body.newPassword
+            const hash = user.password
+            bcrypt.compare(password, hash, function(err, isMatch) {
+                if (err) {
+                  throw err
+                } else if (!isMatch) {
+                    res.status(500).json({success:false, msg: 'password not matched'})
+                } else {
+                    const saltRounds = 10          
+                    bcrypt.genSalt(saltRounds, function (err, salt) {
+                    if (err) {
+                        throw err
+                    } else {
+                        bcrypt.hash(newPassword, salt, function(err, hash) {
+                        if (err) {
+                            throw err
+                        } else {
+                            user.password = hash
+                            user.save()
+                            res.json({success:true, msg: 'password changed'})
+                            }
+                        })
+                    }
+                })
+              }
+            })
+        }catch{
+            res.status(500).json({msg:'error'})
+        }
+        
+    }else{
+        res.status(404).json({msg:'not found'})
+    }
 })
 
 module.exports = router

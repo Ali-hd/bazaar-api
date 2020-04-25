@@ -5,12 +5,17 @@ const ExtractJwt = require('passport-jwt').ExtractJwt;
 const bcrypt = require('bcrypt');
 const User = require('./models/user')
 
+let login
+
 passport.use(new LocalStrategy({
     usernameField: 'email',
     passwordField: 'password',
     session: false,
 },function(email,password,done){
-    User.findOne({ email: email }, function(err, user){
+    if(email.split('').includes('@')){
+        login = {email: email}
+    }else{ login = {username: email} }
+    User.findOne(login, function(err, user){
         if(err){ return done(err)}
         if(!user){
             return done(null, false, {message:'Incorrect email or password'})

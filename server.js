@@ -1,40 +1,61 @@
 require('dotenv').config();
-const express = require("express");
-const server = express();
-const mongoose = require("mongoose");
-const cors = require('cors');
-const passport = require('passport');
+const express = require("express")
+const app = express()
+const server = require('http').createServer(app)
+const io = require("socket.io")(server)
+const mongoose = require("mongoose")
+const cors = require('cors')
+const passport = require('passport')
 const methodOverride = require('method-override') 
 require('./passport');
+const { Post } = require('./models/post')
 
 var authRout = require('./routes/auth')
 var userRout = require('./routes/user')
 var postRout = require('./routes/post')
 
-server.use(express.json())
-server.use(express.urlencoded({ extended: false }))
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
 
-server.get('/',async(req, res, next) =>{
+app.get('/',async(req, res, next) =>{
     res.send("hello")
    });
 
-server.use(cors())
-server.use(passport.initialize())
+app.use(cors())
+app.use(passport.initialize())
 
 mongoose.set('useCreateIndex', true)
-server.use(methodOverride('_method'))
+app.use(methodOverride('_method'))
 
-server.use('/auth',authRout)
-server.use('/post',postRout)
-server.use('/user', userRout)
+app.use('/auth',authRout)
+app.use('/post',postRout)
+app.use('/user', userRout)
 
-mongoose.connect(
+const connect = mongoose.connect(
     process.env.DB_AUTH, {useNewUrlParser:true, useUnifiedTopology: true })
 .then(console.log('MongoDB Connected!'))
-.catch(err=>console.log(err));
+.catch(err=>console.log(err))
+
+io.on("connection", socket =>{
+    socket.on("name", msg=>{
+        connect.then(async db=>{
+            try{
+                console.log('socket received')
+                console.log(msg)
+                let post = await Post.findById('5e9e2fa89dff42481867bbf1')
+                post.views = post.views + 1
+                post.save((err, doc)=>{
+                    return io.emit('output',doc)
+                })
+            }catch(error){
+                console.log(error)
+            }
+        })
+    })
+})
 
 const PORT = process.env.PORT || 5000
 
 server.listen(PORT, () => console.log(`server is running on port ${PORT}`))
 
-module.exports = server;
+module.exports = app;

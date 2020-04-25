@@ -21,27 +21,13 @@ router.post('/upload', function(req,res){
 });
 
 //using passport .authenticate function will check bearer token if its valid or not. req wont go through if its not.
-router.get('/', passport.authenticate('jwt', {session: false}), async function(req,res){
-    axios.get('http://api.ipify.org/?format=json').then(result=>{
-        let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-        if (ip.substr(0, 7) == "::ffff:") {
-        ip = ip.substr(7)
-        }
-        console.log(ip)
-        let visit = { ip: result.data.ip}
-        Views.findOneAndUpdate({postId:req.body.id},{$push:{ipPool:visit}},{ useFindAndModify: false })
-        .then(post=>{
-            if(!post){
-                Views.create({ postId: req.body.id }).catch(err =>console.log(err)) 
-            }
-        }).catch(err=>console.log(err))
-        res.status(200).json('success')
-    }).catch(err=>console.log(err))
-
+router.get('/', async function(req,res){
     try{
+        let posts = await Post.find().populate('user','username profileImg')
+        res.send({success: true , posts})
 
     }catch(error){
-        console.log(error)
+        res.status(500).send({success: false})
     }
 })
 
@@ -74,7 +60,23 @@ router.post('/create', passport.authenticate('jwt', {session: false}),( async (r
 
 router.get('/:id',async(req,res)=>{
     try{
+         // axios.get('http://api.ipify.org/?format=json').then(result=>{
+    //     let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    //     if (ip.substr(0, 7) == "::ffff:") {
+    //     ip = ip.substr(7)
+    //     }
+    //     console.log(ip)
+    //     let visit = { ip: result.data.ip}
+    //     Views.findOneAndUpdate({postId:req.params.id},{$push:{ipPool:visit}},{ useFindAndModify: false })
+    //     .then(post=>{
+    //         if(!post){
+    //             Views.create({ postId: req.body.id }).catch(err =>console.log(err)) 
+    //         }
+    //     }).catch(err=>console.log(err))
+    // }).catch(err=>console.log(err))
         const post = await Post.findById(req.params.id)
+        post.views = post.views + 1
+        post.save()
         res.send({success: true , post})
     }catch{
         res.status(400).json({msg:'error getting post'})
@@ -104,6 +106,25 @@ router.post('/:id/comment', passport.authenticate('jwt', {session: false}), asyn
     }
 
 })
+
+
+router.post('/:id/like', passport.authenticate('jwt', {session: false}), async(req,res)=>{
+    const token = req.headers.authorization.split(' ')[1]
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+    try{
+        let post = await Post.findById(req.params.id)
+        post.likes = post.likes + 1
+        post.save()
+        res.send({success: true, msg: 'liked'})
+    }catch(error){
+        console.error(error);
+        res.status(400).json({msg:'error'})
+    }
+
+})
+
+
 
 router.put("/:id", passport.authenticate('jwt', {session: false}), async (req,res)=>{
     const token = req.headers.authorization.split(' ')[1]
