@@ -62,6 +62,7 @@ router.post('/create', passport.authenticate('jwt', {session: false}),( async (r
 
 router.get('/:id',async(req,res)=>{
     try{
+        console.log(req.ip)
          // axios.get('http://api.ipify.org/?format=json').then(result=>{
     //     let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     //     if (ip.substr(0, 7) == "::ffff:") {
