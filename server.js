@@ -25,7 +25,7 @@ mongoose.set('useCreateIndex', true)
 app.use(methodOverride('_method'))
 
 app.get('/',async(req, res) =>{
-    res.send("bazaar api")
+    res.json("bazaar api")
    });
 
 app.use('/auth',authRout)
