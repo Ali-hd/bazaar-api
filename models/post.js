@@ -46,6 +46,11 @@ const postSchema = new Schema({
         required: true,
         type: Schema.Types.ObjectId,
         ref: 'User'
+    },
+    bids:{
+        default: [],
+        required: false,
+        type: Array
     }
 },{timestamps: true})
 
@@ -59,6 +64,10 @@ const commentSchema = new Schema({
     },
     username:{
         required: true,
+        type: String
+    },
+    userImg:{
+        required: false,
         type: String
     },
     postId:{

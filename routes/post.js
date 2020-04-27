@@ -6,6 +6,7 @@ const axios = require('axios')
 const Views = require('../models/views')
 const { Post, Comment } = require('../models/post')
 const User = require('../models/user')
+const pagination = require('../middleware/pagination')
 
 const upload = require('../services/imgUpload')
 const singleUpload = upload.single('image')
@@ -21,14 +22,15 @@ router.post('/upload', function(req,res){
 });
 
 //using passport .authenticate function will check bearer token if its valid or not. req wont go through if its not.
-router.get('/', async function(req,res){
-    try{
-        let posts = await Post.find().populate('user','username profileImg')
-        res.send({success: true , posts})
+router.get('/', pagination(Post,'posts'), async function(req,res){
+    res.json(res.paginatedResults)
+    // try{
+    //     let posts = await Post.find().populate('user','username profileImg')
+    //     res.send({success: true , posts})
 
-    }catch(error){
-        res.status(500).send({success: false})
-    }
+    // }catch(error){
+    //     res.status(500).send({success: false})
+    // }
 })
 
 router.post('/create', passport.authenticate('jwt', {session: false}),( async (req,res) =>{
@@ -74,7 +76,7 @@ router.get('/:id',async(req,res)=>{
     //         }
     //     }).catch(err=>console.log(err))
     // }).catch(err=>console.log(err))
-        const post = await Post.findById(req.params.id)
+        const post = await Post.findById(req.params.id).populate('comments')
         post.views = post.views + 1
         post.save()
         res.send({success: true , post})
@@ -87,14 +89,15 @@ router.post('/:id/comment', passport.authenticate('jwt', {session: false}), asyn
     const token = req.headers.authorization.split(' ')[1]
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-    const newComment = {
-        description: req.body.description,
-        username: 'Alihd',
-        userId: decoded.id,
-        postId: req.params.id
-    }
-
     try{
+        let user = await User.findById(decoded.id)
+        const newComment = {
+            description: req.body.description,
+            username: decoded.username,
+            userId: decoded.id,
+            userImg: user.profileImg,
+            postId: req.params.id
+        }
         let comment = await Comment.create(newComment)
         let post = await Post.findById(req.params.id)
         post.comments.push(comment)
@@ -113,10 +116,23 @@ router.post('/:id/like', passport.authenticate('jwt', {session: false}), async(r
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     try{
-        let post = await Post.findById(req.params.id)
-        post.likes = post.likes + 1
-        post.save()
-        res.send({success: true, msg: 'liked'})
+        let user = await User.findById(decoded.id)
+        if(user.liked.includes(req.params.id)){
+            var index = user.liked.indexOf(req.params.id);
+            if (index !== -1) user.liked.splice(index, 1);
+            let post = await Post.findById(req.params.id)
+            post.likes = post.likes - 1
+            user.save()
+            post.save()
+            res.send({msg: 'unliked'})
+        }else{
+            let post = await Post.findById(req.params.id)
+            post.likes = post.likes + 1
+            user.liked.push(post)
+            user.save()
+            post.save()
+            res.send({success: true, msg: 'liked'})
+        }
     }catch(error){
         console.error(error);
         res.status(400).json({msg:'error'})
@@ -168,6 +184,31 @@ router.post('/:id/watchlater', passport.authenticate('jwt', {session: false}), a
     }
 })
 
+router.post('/:id/bid', passport.authenticate('jwt', {session: false}), async (req,res)=>{
+    const token = req.headers.authorization.split(' ')[1]
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+    try{
+        const bid = {bid:parseInt(req.body.bid), username: decoded.username}
+        const post = await Post.findById(req.params.id)
+        console.log(post.user)
+        console.log(req.body)
+        console.log(post.bids)
+        console.log(post.bids.length)
+        if(post.user == decoded.id){
+            res.status(401).json({msg:"You cant bid on your own post"})
+        }else if(post.bids.length>0 && post.bids[post.bids.length-1].bid >= bid.bid){
+            res.status(401).json({msg:"You must bid more than current bid"})
+        }else{
+            post.bids.push(bid)
+            post.save()
+            res.json({msg:"bid submitted"})
+        }
+        
+    }catch(error){
+        res.status(500).json({success: false, msg: 'error adding bid'})
+    }
+})
 
 router.post('/:id/close', passport.authenticate('jwt', {session: false}), async (req,res)=>{
     const token = req.headers.authorization.split(' ')[1]
