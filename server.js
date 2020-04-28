@@ -38,6 +38,7 @@ const connect = mongoose.connect(
 .then(console.log('MongoDB Connected!'))
 .catch(err=>console.log(err))
 
+
 io.use(function(socket, next){
     if (socket.handshake.query && socket.handshake.query.token){
         jwt.verify(socket.handshake.query.token, process.env.JWT_SECRET, function(err, decoded) {
@@ -54,14 +55,21 @@ io.on("connection", socket =>{
         connect.then(async db=>{
             try{
                 console.log('socket received')
-                console.log(bid)
-                let post = await Post.findById(bid.postId)
-                post.views = post.views + 1
-                post.save((err, doc)=>{
-                    return io.emit('output',doc)
-                })
+                const info = { bid:parseInt(bid.bid), username: socket.decoded.username }
+                const post = await Post.findById(bid.postId)
+                if(post.user == socket.decoded.id){
+                    return io.emit('output',"You cant bid on your own post")
+                }else if(post.bids.length>0 && post.bids[0].bid >= bid.bid){
+                    return io.emit('output',"You must bid more than current bid")
+                }else{
+                    post.bids.unshift(info)
+                    post.save((err, doc)=>{
+                        return io.emit('output',doc.bids)
+                    })
+                }
             }catch(error){
                 console.log(error)
+                return io.emit('output', 'Unknown server error')
             }
         })
     })

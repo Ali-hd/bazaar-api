@@ -185,31 +185,6 @@ router.post('/:id/watchlater', passport.authenticate('jwt', {session: false}), a
     }
 })
 
-router.post('/:id/bid', passport.authenticate('jwt', {session: false}), async (req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
-    try{
-        const bid = {bid:parseInt(req.body.bid), username: decoded.username}
-        const post = await Post.findById(req.params.id)
-        console.log(post.user)
-        console.log(req.body)
-        console.log(post.bids)
-        console.log(post.bids.length)
-        if(post.user == decoded.id){
-            res.status(401).json({msg:"You cant bid on your own post"})
-        }else if(post.bids.length>0 && post.bids[post.bids.length-1].bid >= bid.bid){
-            res.status(401).json({msg:"You must bid more than current bid"})
-        }else{
-            post.bids.push(bid)
-            post.save()
-            res.json({msg:"bid submitted"})
-        }
-        
-    }catch(error){
-        res.status(500).json({success: false, msg: 'error adding bid'})
-    }
-})
 
 router.post('/:id/close', passport.authenticate('jwt', {session: false}), async (req,res)=>{
     const token = req.headers.authorization.split(' ')[1]
@@ -227,6 +202,21 @@ router.post('/:id/close', passport.authenticate('jwt', {session: false}), async 
     
     }catch(error){
         res.status(500).json({success: false, msg: 'error closing post'})
+    }
+})
+
+router.post('/search', async (req,res)=>{
+    try{
+        let results
+        if(req.body.search.length < 1){
+            results = await Post.find()
+        }else{
+            results = await Post.find({title: new RegExp(req.body.search, 'i')})
+        }
+        res.send(results)
+    }catch(error){
+        console.log(error)
+        res.status(500).json({success: false, msg: 'error occured while searching'})
     }
 })
 

@@ -38,7 +38,7 @@ router.post('/register', function(req,res,next){
     profileImg : req.body.profileimg ,
     phoneNumber : req.body.phonenumber,
     username : req.body.username,
-    city : req.body.city,
+    location : req.body.location,
     admin: false,
     }
 
@@ -72,7 +72,7 @@ router.post('/:username', passport.authenticate('jwt', {session: false}), async 
                 if (err) {
                   throw err
                 } else if (!isMatch) {
-                    res.status(500).json({success:false, msg: 'password not matched'})
+                    res.status(500).json({success:false, msg: 'entered password incorrect'})
                 } else {
                     const saltRounds = 10          
                     bcrypt.genSalt(saltRounds, function (err, salt) {

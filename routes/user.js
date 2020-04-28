@@ -47,7 +47,7 @@ router.put('/:username', passport.authenticate('jwt', {session: false}), async (
             lastName: req.body.lastname,
             description: req.body.description,
             profileImg: req.body.profileImg,
-            city: req.body.city,
+            location: req.body.location,
         }
 
     Object.keys(updateUser).forEach(key => updateUser[key] === undefined && delete updateUser[key])

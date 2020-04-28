@@ -34,7 +34,7 @@ const userSchema = new Schema({
         type: String
     },
     profileImg:{
-        default: "",
+        default: "https://i.imgur.com/iV7Sdgm.jpg",
         required: false , 
         type: String
     },
@@ -43,7 +43,7 @@ const userSchema = new Schema({
         type: String,
         unique:true
     },
-    city:{
+    location:{
         default: "",
         required: false , 
         type: String
