@@ -22,7 +22,7 @@ router.post('/upload', function(req,res){
 });
 
 //using passport .authenticate function will check bearer token if its valid or not. req wont go through if its not.
-router.get('/', pagination(Post,'posts'), async function(req,res){
+router.get('/', pagination(Post,'posts'), function(req,res){
     res.json(res.paginatedResults)
     // try{
     //     let posts = await Post.find().populate('user','username profileImg')
@@ -205,19 +205,8 @@ router.post('/:id/close', passport.authenticate('jwt', {session: false}), async 
     }
 })
 
-router.post('/search', async (req,res)=>{
-    try{
-        let results
-        if(req.body.search.length < 1){
-            results = await Post.find()
-        }else{
-            results = await Post.find({title: new RegExp(req.body.search, 'i')})
-        }
-        res.send(results)
-    }catch(error){
-        console.log(error)
-        res.status(500).json({success: false, msg: 'error occured while searching'})
-    }
+router.post('/search',pagination(Post,'search'),(req,res)=>{
+    res.json(res.paginatedResults)
 })
 
 

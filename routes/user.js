@@ -14,20 +14,19 @@ router.get('/:username', async (req,res)=>{
         // console.log(err)
         decoded = {id:null}
     }
-   
         
     try{
-        let user = await User.findOne({username:req.params.username}).populate('posts')
-        //if user = null then "user not found"
-        user = user.toJSON()
-        if(decoded && decoded.id == req.params.username || decoded && decoded.admin){
+        let user
+        if(decoded && decoded.username == req.params.username || decoded && decoded.admin){
+            if(req.query.type == 'liked'){
+                user = await User.findOne({username:req.params.username},{password:0, posts:0}).populate('liked')
+            }else{
+                user = await User.findOne({username:req.params.username},{password:0}).populate('posts')
+            }
+            //if user = null then "user not found"
             res.send({success: true, user})
         }else{
-            //response feels slow 
-            Object.keys(user).forEach(key => {
-                if(['email', 'password', 'purchesedorder', 'watchlater'].includes(key))
-                delete user[key]
-            })
+            user = await User.findOne({username:req.params.username},{email:0,password:0,liked:0}).populate('posts')
             res.send({success: true, user})
         }
     }catch(err){
@@ -86,11 +85,11 @@ router.post('/:username/follow', passport.authenticate('jwt', {session: false}),
 })
 
 router.post('/:username/rate', passport.authenticate('jwt', {session: false}), async (req,res)=>{
-
     try{
         const review = {
             star: req.body.star,
-            description: req.body.description
+            description: req.body.description,
+            username: req.user.username
         }
 
         const user = await User.findOne({username:req.params.username})

@@ -101,4 +101,14 @@ router.post('/:username', passport.authenticate('jwt', {session: false}), async 
     }
 })
 
+router.post('/:username/check', async (req,res)=>{
+    try{
+        const user = await User.find({username: req.params.username})
+        if(user.length>0){ res.send({msg:'username already exist'})
+        }else if(!user || user.length<1){ res.send({msg:'username available'}) }
+    }catch(error){
+        res.status(500).json({success: false, msg: 'error finding username'})
+    }
+})
+
 module.exports = router

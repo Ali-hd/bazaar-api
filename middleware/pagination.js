@@ -26,10 +26,18 @@ const pagination = (model,type) => {
       }
     }
     try {
+      // contribs: { $slice: 2 }
       if(type == 'posts'){
-        results.results = await model.find().limit(limit).skip(startIndex).populate('user','username profileImg').exec()
+        results.results = await model.find({ }, {comments: 0, images: { $slice: 1}}).limit(limit).skip(startIndex).populate('user','username profileImg').exec()
+        Array.isArray(results.results.images) ? results.results.images.slice(0,1) : null
+      }else if(type == 'search'){
+          if(req.body.search.length < 1){
+            results.results = await model.find({ }, {comments: 0, images: { $slice: 1}}).limit(limit).skip(startIndex).populate('user','username profileImg').exec()
+          }else{
+            results.results = await model.find({title: new RegExp(req.body.search, 'i')}, {comments: 0, images: { $slice: 1}}).limit(limit).skip(startIndex).populate('user','username profileImg').exec()
+          }
       }else{
-        results.results = await model.find().limit(limit).skip(startIndex).exec()
+          results.results = {}
       }
       
       res.paginatedResults = results

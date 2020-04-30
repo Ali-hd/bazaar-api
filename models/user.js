@@ -72,10 +72,11 @@ const userSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:'Post'
     }],
-    ratings:[{
-        star: String,
-        description: String
-    }]
+    ratings:{
+        required: false,
+        default: [],
+        type: Array
+    }
 
 },{timestamps: true},)
 
