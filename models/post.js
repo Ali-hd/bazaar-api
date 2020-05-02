@@ -18,6 +18,16 @@ const postSchema = new Schema({
         default: "",
         type:String
     },
+    startBid:{
+        required: false,
+        default: '0',
+        type:String
+    },
+    price:{
+        required: false,
+        default: '',
+        type:String,
+    },
     images:{
         required: true,
         default: [],

@@ -24,32 +24,22 @@ router.post('/upload', function(req,res){
 //using passport .authenticate function will check bearer token if its valid or not. req wont go through if its not.
 router.get('/', pagination(Post,'posts'), function(req,res){
     res.json(res.paginatedResults)
-    // try{
-    //     let posts = await Post.find().populate('user','username profileImg')
-    //     res.send({success: true , posts})
-
-    // }catch(error){
-    //     res.status(500).send({success: false})
-    // }
 })
 
 router.post('/create', passport.authenticate('jwt', {session: false}),( async (req,res) =>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    const userId = decoded.id
-    
+ 
     const newPost = {
         title:req.body.title,
         description: req.body.description,
         location: req.body.location,
         images: req.body.images,
-        user: userId
+        user: req.user._id,
     }
 
     try{
+        let user = await User.findById(req.user._id)
         let post = await Post.create(newPost)
-        let user = await User.findById(userId)
-        user.posts.push(post)
+        user.posts.unshift(post)
         user.save()
         res.json({msg:'post created successfully'})
     }catch(err){
@@ -77,7 +67,7 @@ router.get('/:id',async(req,res)=>{
     //         }
     //     }).catch(err=>console.log(err))
     // }).catch(err=>console.log(err))
-        const post = await Post.findById(req.params.id).populate('comments')
+        const post = await Post.findById(req.params.id).populate('comments').populate('user','username')
         post.views = post.views + 1
         post.save()
         res.send({success: true , post})
@@ -87,15 +77,13 @@ router.get('/:id',async(req,res)=>{
 })
 
 router.post('/:id/comment', passport.authenticate('jwt', {session: false}), async(req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     try{
         let user = await User.findById(decoded.id)
         const newComment = {
             description: req.body.description,
-            username: decoded.username,
-            userId: decoded.id,
+            username: req.user.username,
+            userId: req.user._id,
             userImg: user.profileImg,
             postId: req.params.id
         }
@@ -113,11 +101,9 @@ router.post('/:id/comment', passport.authenticate('jwt', {session: false}), asyn
 
 
 router.post('/:id/like', passport.authenticate('jwt', {session: false}), async(req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
+    
     try{
-        let user = await User.findById(decoded.id)
+        let user = await User.findById(req.user._id)
         if(user.liked.includes(req.params.id)){
             var index = user.liked.indexOf(req.params.id);
             if (index !== -1) user.liked.splice(index, 1);
@@ -129,7 +115,7 @@ router.post('/:id/like', passport.authenticate('jwt', {session: false}), async(r
         }else{
             let post = await Post.findById(req.params.id)
             post.likes = post.likes + 1
-            user.liked.push(post)
+            user.liked.unshift(post)
             user.save()
             post.save()
             res.send({success: true, msg: 'liked'})
@@ -144,9 +130,6 @@ router.post('/:id/like', passport.authenticate('jwt', {session: false}), async(r
 
 
 router.put("/:id", passport.authenticate('jwt', {session: false}), async (req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
     let updateP = {
         title: req.body.title,
         description: req.body.description
@@ -156,8 +139,7 @@ router.put("/:id", passport.authenticate('jwt', {session: false}), async (req,re
     
     try{
         const post = await Post.findById(req.params.id)
-        console.log(post,decoded, updateP)
-        if(post.user == decoded.id){
+        if(post.user == req.user._id){
             Post.findByIdAndUpdate(req.params.id,updateP, {useFindAndModify: false})
             .then(()=>res.json({success: true, msg:'post has been updated'}))
             .catch(err=>res.status(400).json({success: false, msg:'failed to update post'}))
@@ -171,13 +153,11 @@ router.put("/:id", passport.authenticate('jwt', {session: false}), async (req,re
 
 
 router.post('/:id/watchlater', passport.authenticate('jwt', {session: false}), async (req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     try{
-        const user = await User.findById(decoded.id)
+        const user = await User.findById(req.user._id)
         const post = await Post.findById(req.params.id)
-        user.watchlater.push(post)
+        user.watchlater.unshift(post)
         user.save()
         res.json({success: true, msg:'post has been added to watchlater'})
     }catch(error){
@@ -187,12 +167,10 @@ router.post('/:id/watchlater', passport.authenticate('jwt', {session: false}), a
 
 
 router.post('/:id/close', passport.authenticate('jwt', {session: false}), async (req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     try{
         const post = await Post.findById(req.params.id)
-        if(decoded.id == post.user){
+        if(req.user._id == post.user){
             post.open = false
             post.save()
             res.json({success: true, msg:'post has been closed'})

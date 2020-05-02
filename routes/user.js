@@ -37,8 +37,6 @@ router.get('/:username', async (req,res)=>{
 
 
 router.put('/:username', passport.authenticate('jwt', {session: false}), async (req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     try{
         let updateUser = {
@@ -52,7 +50,9 @@ router.put('/:username', passport.authenticate('jwt', {session: false}), async (
     Object.keys(updateUser).forEach(key => updateUser[key] === undefined && delete updateUser[key])
 
         const user = await User.findOne({username:req.params.username})
-        if(user._id == decoded.id){
+        console.log(user._id)
+        console.log(req.user._id)
+        if(user.username == req.user.username){
             User.findOneAndUpdate({username:req.params.username}, updateUser, { useFindAndModify: false })
             .then(()=>res.json({success: true, msg:'user has been updated'}))
             .catch(err=>res.status(400).json({success: false, msg:'failed to update user'}))
@@ -66,16 +66,14 @@ router.put('/:username', passport.authenticate('jwt', {session: false}), async (
 
 
 router.post('/:username/follow', passport.authenticate('jwt', {session: false}), async (req,res)=>{
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     try{
-        const user = await User.findById(decoded.id)
+        const user = await User.findById(req.user._id)
         const followUser = await User.findOne({username:req.params.username})
 
-        user.following.push(followUser)
+        user.following.unshift(followUser)
         user.save()
-        followUser.followers.push(user)
+        followUser.followers.unshift(user)
         followUser.save()
 
         res.json({success: true, msg:'followed successfully'})
@@ -89,16 +87,31 @@ router.post('/:username/rate', passport.authenticate('jwt', {session: false}), a
         const review = {
             star: req.body.star,
             description: req.body.description,
-            username: req.user.username
+            username: req.user.username,
+            userImg: req.user.profileImg
         }
 
-        const user = await User.findOne({username:req.params.username})
-        user.ratings.push(review)
-        user.save()
+        const record = {
+            username: req.params.username,
+            star: req.body.star
+        }
 
-        res.json({success: true, msg:'rated successfully'})
-        
+        const reviewer = await User.findOne({username:req.user.username})
+        let didReview = reviewer.rated.some( rating => rating['username'] === req.params.username )
+        if(didReview){
+            res.status(400).json({success: false, msg: 'You have already rated this user'})
+        }else{
+            const user = await User.findOne({username:req.params.username})
+            reviewer.rated.push(record)
+            user.ratings.unshift(review)
+            user.save()
+            reviewer.save()
+    
+            res.json({success: true, msg:'rated successfully'})
+        }
+
     }catch(error){
+        console.log(error)
         res.status(500).json({success: false, msg: 'error rating user'})
     }
 })

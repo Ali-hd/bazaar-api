@@ -9,7 +9,7 @@ router.post('/login', function(req,res,next){
     passport.authenticate('local',{session:false},(err,user,info)=>{
         if (err || !user) {
             return res.status(400).json({
-                message: info ? info.message : 'Login failed',
+                msg: info ? info.message : 'Login failed',
                 user   : user
             });
         }
@@ -58,11 +58,9 @@ router.post('/register', function(req,res,next){
 })
 
 
-router.post('/:username', passport.authenticate('jwt', {session: false}), async function(req,res,next){
-    const token = req.headers.authorization.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+router.post('/:username', passport.authenticate('jwt', {session: false}), async function(req,res){
 
-    if(req.body.type == 'change password' && req.params.username == decoded.username){
+    if(req.body.type == 'change password' && req.params.username == req.user.username){
         try{
             let user = await User.findOne({username:req.params.username})
             const password = req.body.password

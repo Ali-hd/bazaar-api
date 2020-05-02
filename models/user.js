@@ -76,6 +76,11 @@ const userSchema = new Schema({
         required: false,
         default: [],
         type: Array
+    },
+    rated:{
+        required: false,
+        default: [],
+        type: Array
     }
 
 },{timestamps: true},)
