@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken')
 const methodOverride = require('method-override') 
 require('./passport');
 const { Post } = require('./models/post')
+const { Conversation, Message } = require('./models/chat')
 
 var authRout = require('./routes/auth')
 var userRout = require('./routes/user')
@@ -73,17 +74,44 @@ io.on("connection", socket =>{
             }
         })
     })
-    // socket.on("name", msg=>{
-    //     connect.then(async db=>{
-    //         try{
-    //             console.log('socket received')
-    //             console.log(msg)
-    //             return io.emit('output','we got it')
-    //         }catch(error){
-    //             console.log(error)
-    //         }
-    //     })
-    // })
+    socket.on("chat", msg=>{
+        connect.then(async db=>{
+            try{
+                console.log('socket received')
+                console.log(msg.username)
+                console.log(socket.decoded.username)
+                const findChat = await Conversation.find( { participants: { $all: [msg.username, socket.decoded.username] } } ).populate('messages')
+                console.log(findChat, 'found chat')
+                if(!findChat){
+                    let firstmessage = {
+                        sender: socket.decoded.username,
+                        content: msg.content
+                    }
+                    let newMessage = await Message.create(firstmessage)
+                    let newConversation = await Conversation.create({participants:[msg.username, socket.decoded.username]})
+                    newConversation.messages.push(newMessage)
+                    newConversation.save((err, doc)=>{
+                        return io.emit('output', 'message sent!')
+                    })
+                }else if(findChat){
+                    let newMsg = {
+                        sender: socket.decoded.username,
+                        content: msg.content
+                    }
+                    let addMsg = await Message.create(newMsg)
+                    findChat[0].messages.push(addMsg)
+                    findChat[0].save((err, doc)=>{
+                        return io.emit('output', doc.messages)
+                    })
+                }else{
+                    return io.emit('error sending message')
+                }
+            }catch(error){
+                console.log(error)
+                return io.emit('output', 'Unknown server error')
+            }
+        })
+    })
 })
 
 //NOTE!: need to give herku .env vars from settings app

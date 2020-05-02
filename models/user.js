@@ -72,6 +72,10 @@ const userSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:'Post'
     }],
+    conversations:[{
+        type:Schema.Types.ObjectId,
+        ref:'Conversation'
+    }],
     ratings:{
         required: false,
         default: [],

@@ -20,12 +20,8 @@ const messagesSchema = new Schema ({
     content:{
         type: String,
         default: ""
-    },
-    time:{
-        type: String,
-        default: new Date()
     }
-})
+},{timestamps: true})
 
 const Conversation = mongoose.model('Conversation',conversationSchema)
 const Message = mongoose.model('Message',messagesSchema)
