@@ -10,11 +10,13 @@ const jwt = require('jsonwebtoken')
 const methodOverride = require('method-override') 
 require('./passport');
 const { Post } = require('./models/post')
+const User = require('./models/user')
 const { Conversation, Message } = require('./models/chat')
 
 var authRout = require('./routes/auth')
 var userRout = require('./routes/user')
 var postRout = require('./routes/post')
+var actionRout = require('./routes/action')
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
@@ -32,6 +34,7 @@ app.get('/',async(req, res) =>{
 app.use('/auth',authRout)
 app.use('/post',postRout)
 app.use('/user', userRout)
+app.use('/action', actionRout)
 
 
 const connect = mongoose.connect(
@@ -40,6 +43,7 @@ const connect = mongoose.connect(
 .catch(err=>console.log(err))
 
 
+//Socket io
 io.use(function(socket, next){
     if (socket.handshake.query && socket.handshake.query.token){
         jwt.verify(socket.handshake.query.token, process.env.JWT_SECRET, function(err, decoded) {
@@ -57,7 +61,7 @@ io.on("connection", socket =>{
             try{
                 console.log('socket received')
                 const info = { bid:parseInt(bid.bid), username: socket.decoded.username }
-                const post = await Post.findById(bid.postId)
+                const post = await Post.findById(bid.postId,{bids:1})
                 if(post.user == socket.decoded.id){
                     return io.emit('output',"You cant bid on your own post")
                 }else if(post.bids.length>0 && post.bids[0].bid >= bid.bid){
@@ -65,7 +69,7 @@ io.on("connection", socket =>{
                 }else{
                     post.bids.unshift(info)
                     post.save((err, doc)=>{
-                        return io.emit('output',doc.bids)
+                        return io.emit('output',doc)
                     })
                 }
             }catch(error){
@@ -74,26 +78,36 @@ io.on("connection", socket =>{
             }
         })
     })
+    
+    socket.on('subscribe', room=>{
+        console.log('room', room)
+        socket.join(room)
+    })
+
     socket.on("chat", msg=>{
         connect.then(async db=>{
+            console.log('socket id', socket.id)
             try{
-                console.log('socket received')
-                console.log(msg.username)
-                console.log(socket.decoded.username)
                 const findChat = await Conversation.find( { participants: { $all: [msg.username, socket.decoded.username] } } ).populate('messages')
-                console.log(findChat, 'found chat')
-                if(!findChat){
+                if(findChat.length<1){
+                    console.log('new conversation')
                     let firstmessage = {
                         sender: socket.decoded.username,
                         content: msg.content
                     }
                     let newMessage = await Message.create(firstmessage)
                     let newConversation = await Conversation.create({participants:[msg.username, socket.decoded.username]})
+                    let user1 = await User.findOne({username: socket.decoded.username})
+                    let user2 = await User.findOne({username: msg.username})
                     newConversation.messages.push(newMessage)
                     newConversation.save((err, doc)=>{
-                        return io.emit('output', 'message sent!')
+                        user1.conversations.unshift(newConversation)
+                        user1.save()
+                        user2.conversations.unshift(newConversation)
+                        user2.save()
+                        return socket.broadcast.to(msg.room).emit('output', doc.messages)
                     })
-                }else if(findChat){
+                }else if(findChat.length>0){
                     let newMsg = {
                         sender: socket.decoded.username,
                         content: msg.content
@@ -101,7 +115,8 @@ io.on("connection", socket =>{
                     let addMsg = await Message.create(newMsg)
                     findChat[0].messages.push(addMsg)
                     findChat[0].save((err, doc)=>{
-                        return io.emit('output', doc.messages)
+                        return io.in(msg.room).emit('output', doc.messages)
+                        // return io.emit('output', doc.messages)
                     })
                 }else{
                     return io.emit('error sending message')

@@ -3,6 +3,7 @@ const router = express.Router()
 const passport = require('passport')
 const jwt = require('jsonwebtoken')
 const User = require('../models/user')
+const { Conversation, Message } = require('../models/chat')
 
 router.get('/:username', async (req,res)=>{
     let decoded
@@ -103,10 +104,10 @@ router.post('/:username/rate', passport.authenticate('jwt', {session: false}), a
         }else{
             const user = await User.findOne({username:req.params.username})
             reviewer.rated.push(record)
+            reviewer.save()
             user.ratings.unshift(review)
             user.save()
-            reviewer.save()
-    
+            
             res.json({success: true, msg:'rated successfully'})
         }
 
@@ -116,6 +117,48 @@ router.post('/:username/rate', passport.authenticate('jwt', {session: false}), a
     }
 })
 
+
+//start new/existing conversation
+router.post('/conversation', passport.authenticate('jwt', {session: false}), async (req,res)=>{
+    console.log(req.body.username)
+    console.log(req.user.username)
+    let user1 = req.user.username
+    let user2 = req.body.username
+
+    try{
+        const findChat = await Conversation.find( { participants: { $all: [user1, user2] } } )
+        if(findChat.length<1){
+            let firstmessage = {
+                sender: user1,
+                content: req.body.content
+            }
+            let newMessage = await Message.create(firstmessage)
+            let newConversation = await Conversation.create({participants:[user1, user2]})
+            let user11 = await User.findOne({username: user1})
+            let user22 = await User.findOne({username: user2})
+            newConversation.messages.push(newMessage)
+            newConversation.save()
+            user11.conversations.unshift(newConversation)
+            user11.save()
+            user22.conversations.unshift(newConversation)
+            user22.save()
+            res.send({msg:'new message sent'})
+            }
+        if(findChat.length>0){
+            let newMsg = {
+                sender: user1,
+                content: req.body.content
+            }
+            let addMsg = await Message.create(newMsg)
+            findChat[0].messages.push(addMsg)
+            findChat[0].save()
+            res.send({msg:'messsage sent'})
+        }
+    }catch(error){
+        console.log(error)
+        res.status(500).json({success: false, msg: 'error rating user'})
+    }
+})
 
 
 module.exports = router

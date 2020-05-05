@@ -109,4 +109,14 @@ router.post('/:username/check', async (req,res)=>{
     }
 })
 
+router.get('/user', passport.authenticate('jwt', {session: false}), async (req,res)=>{
+    try{
+        const user = await User.findOne({username: req.user.username},{profileImg: 1, liked: 1, following: 1, rated: 1})
+        res.send({success: true, account: user})
+        
+    }catch(error){
+        res.status(500).json({success: false, msg: 'error getting account'})
+    }
+})
+
 module.exports = router

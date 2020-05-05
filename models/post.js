@@ -73,13 +73,10 @@ const commentSchema = new Schema({
         required: true,
         type: String
     },
-    username:{
+    user:{
         required: true,
-        type: String
-    },
-    userImg:{
-        required: false,
-        type: String
+        type: Schema.Types.ObjectId,
+        ref: 'User'
     },
     postId:{
         required: true,

@@ -67,7 +67,7 @@ router.get('/:id',async(req,res)=>{
     //         }
     //     }).catch(err=>console.log(err))
     // }).catch(err=>console.log(err))
-        const post = await Post.findById(req.params.id).populate('comments').populate('user','username')
+        const post = await Post.findById(req.params.id).populate({path:'comments', populate:{path:'user', select:'username profileImg'}}).populate('user','username')
         post.views = post.views + 1
         post.save()
         res.send({success: true , post})
@@ -79,12 +79,9 @@ router.get('/:id',async(req,res)=>{
 router.post('/:id/comment', passport.authenticate('jwt', {session: false}), async(req,res)=>{
 
     try{
-        let user = await User.findById(decoded.id)
         const newComment = {
             description: req.body.description,
-            username: req.user.username,
-            userId: req.user._id,
-            userImg: user.profileImg,
+            user: req.user._id,
             postId: req.params.id
         }
         let comment = await Comment.create(newComment)
