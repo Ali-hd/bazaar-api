@@ -18,6 +18,11 @@ const postSchema = new Schema({
         default: "",
         type:String
     },
+    // condition:{
+    //     required: true,
+    //     default: "",
+    //     type:String
+    // },
     startBid:{
         required: false,
         default: '0',

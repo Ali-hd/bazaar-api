@@ -61,9 +61,9 @@ io.on("connection", socket =>{
             try{
                 console.log('socket received')
                 const info = { bid:parseInt(bid.bid), username: socket.decoded.username }
-                const post = await Post.findById(bid.postId,{bids:1})
+                const post = await Post.findById(bid.postId,{bids:1, user: 1})
                 if(post.user == socket.decoded.id){
-                    return io.emit('output',"You cant bid on your own post")
+                    return io.emit('output',{msg:"You cant bid on your own post", _id: post._id})
                 }else if(post.bids.length>0 && post.bids[0].bid >= bid.bid){
                     return io.emit('output',"You must bid more than current bid")
                 }else{
@@ -86,7 +86,6 @@ io.on("connection", socket =>{
 
     socket.on("chat", msg=>{
         connect.then(async db=>{
-            console.log('socket id', socket.id)
             try{
                 const findChat = await Conversation.find( { participants: { $all: [msg.username, socket.decoded.username] } } ).populate('messages')
                 if(findChat.length<1){
@@ -115,6 +114,7 @@ io.on("connection", socket =>{
                     let addMsg = await Message.create(newMsg)
                     findChat[0].messages.push(addMsg)
                     findChat[0].save((err, doc)=>{
+                        console.log('outputing')
                         return io.in(msg.room).emit('output', doc.messages)
                         // return io.emit('output', doc.messages)
                     })

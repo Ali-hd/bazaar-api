@@ -1,8 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const passport = require('passport')
-const { Conversation, Message } = require('../models/chat')
-const { Post, Comment } = require('../models/post')
+const { Conversation } = require('../models/chat')
 const User = require('../models/user')
 
 //get user conversations

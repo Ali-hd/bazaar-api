@@ -120,8 +120,7 @@ router.post('/:username/rate', passport.authenticate('jwt', {session: false}), a
 
 //start new/existing conversation
 router.post('/conversation', passport.authenticate('jwt', {session: false}), async (req,res)=>{
-    console.log(req.body.username)
-    console.log(req.user.username)
+
     let user1 = req.user.username
     let user2 = req.body.username
 

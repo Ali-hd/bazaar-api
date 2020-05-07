@@ -51,6 +51,7 @@ router.post('/create', passport.authenticate('jwt', {session: false}),( async (r
 )
 
 router.get('/:id',async(req,res)=>{
+    console.log('getting post')
     try{
         console.log(req.ip)
          // axios.get('http://api.ipify.org/?format=json').then(result=>{
@@ -103,7 +104,7 @@ router.post('/:id/like', passport.authenticate('jwt', {session: false}), async(r
         let user = await User.findById(req.user._id)
         if(user.liked.includes(req.params.id)){
             var index = user.liked.indexOf(req.params.id);
-            if (index !== -1) user.liked.splice(index, 1);
+            if (index !== -1){ user.liked.splice(index, 1) }
             let post = await Post.findById(req.params.id)
             post.likes = post.likes - 1
             user.save()
