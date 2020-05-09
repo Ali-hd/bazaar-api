@@ -80,8 +80,13 @@ io.on("connection", socket =>{
     })
     
     socket.on('subscribe', room=>{
-        console.log('room', room)
+        console.log('joining room', room)
         socket.join(room)
+    })
+
+    socket.on('leaveRoom', room=>{
+        console.log('leaving room', room)
+        socket.leave(room)
     })
 
     socket.on("chat", msg=>{
@@ -111,6 +116,19 @@ io.on("connection", socket =>{
                         sender: socket.decoded.username,
                         content: msg.content
                     }
+                    io.in(msg.room).clients( async (err, clients)=>{
+                        if(clients.length<2){
+                            let receiver = await User.findOne({username: msg.username})
+
+                            if(!receiver.notifications.find(x=> x.from == socket.decoded.username)){
+                                receiver.notifications.push({
+                                    from: socket.decoded.username,
+                                    description: msg.content,
+                                })
+                                receiver.save()
+                            }
+                        }
+                    })
                     let addMsg = await Message.create(newMsg)
                     findChat[0].messages.push(addMsg)
                     findChat[0].save((err, doc)=>{

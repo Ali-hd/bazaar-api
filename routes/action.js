@@ -7,8 +7,9 @@ const User = require('../models/user')
 //get user conversations
 router.get('/conversations', passport.authenticate('jwt', {session: false}), async (req,res)=>{
     try{
-        
-        const conversations = await User.findOne({username: req.user.username},{conversations: 1, _id: 0}).sort({updatedAt:1}).populate({path:'conversations', select:'participants updatedAt', populate:{path:'messages', select:'content sender'}})
+        const conversations = await User.findOne({username: req.user.username},{conversations: 1, notifications: 1}).populate({path:'conversations', select:'participants updatedAt', options: { sort: { 'updatedAt': -1 } }, populate:{path:'messages', select:'content sender'}})
+        conversations.notifications = []
+        conversations.save()
         res.send({conversations})
 
     }catch(error){
