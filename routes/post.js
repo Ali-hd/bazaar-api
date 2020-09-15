@@ -68,7 +68,7 @@ router.get('/:id',async(req,res)=>{
     //         }
     //     }).catch(err=>console.log(err))
     // }).catch(err=>console.log(err))
-        const post = await Post.findById(req.params.id).populate({path:'comments', populate:{path:'user', select:'username profileImg'}}).populate('user','username')
+        const post = await Post.findById(req.params.id).populate({path:'comments', populate:{path:'user', select:'username profileImg'}}).populate('user','username profileImg')
         post.views = post.views + 1
         post.save()
         res.send({success: true , post})
