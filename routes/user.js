@@ -89,7 +89,8 @@ router.post('/:username/rate', passport.authenticate('jwt', {session: false}), a
             star: req.body.star,
             description: req.body.description,
             username: req.user.username,
-            userImg: req.user.profileImg
+            userImg: req.user.profileImg,
+            date: new Date(Date.now()).toISOString()
         }
 
         const record = {
