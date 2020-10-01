@@ -22,12 +22,16 @@ router.get('/:username', async (req,res)=>{
             if(req.query.type == 'liked'){
                 user = await User.findOne({username:req.params.username},{password:0, posts:0}).populate('liked')
             }else{
-                user = await User.findOne({username:req.params.username},{password:0}).populate({path: 'posts', populate:{path:'comments', select:'_id'}}).populate({path: 'liked', select: 'title createdAt description images comments', populate:{path: 'comments', select: '_id'}})
+                user = await User.findOne({username:req.params.username},{password:0})
+                .populate({path: 'posts', select: 'title createdAt description images comments', populate:{path:'comments', select:'_id'}})
+                .populate({path: 'liked', select: 'title createdAt description images comments', populate:{path: 'comments', select: '_id'}})
             }
             //if user = null then "user not found"
             res.send({success: true, user})
         }else{
-            user = await User.findOne({username:req.params.username},{email:0,password:0}).populate({path: 'posts', populate:{path:'comments', select:'_id'}}).populate({path: 'liked', select: 'title createdAt description images comments', populate:{path: 'comments', select: '_id'}})
+            user = await User.findOne({username:req.params.username},{email:0,password:0})
+            .populate({path: 'posts', select: 'title createdAt description images comments', populate:{path:'comments', select:'_id'}})
+            .populate({path: 'liked', select: 'title createdAt description images comments', populate:{path: 'comments', select: '_id'}})
             res.send({success: true, user})
         }
     }catch(err){
