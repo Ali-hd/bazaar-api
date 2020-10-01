@@ -31,7 +31,7 @@ router.post('/create', passport.authenticate('jwt', {session: false}),( async (r
     const newPost = {
         title:req.body.title,
         description: req.body.description,
-        location: req.body.location,
+        location: req.body.location.toLowerCase(),
         images: req.body.images,
         user: req.user._id,
     }
