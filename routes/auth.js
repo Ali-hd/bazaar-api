@@ -44,16 +44,23 @@ router.post('/register', function(req,res,next){
 
     Object.keys(newUser).forEach(key => newUser[key] === undefined && delete newUser[key])
 
-    User.findOne({email:req.body.email})
-    .then(user=>{
-        if(!user){
-            bcrypt.hash(req.body.password , 10 ,(err, hash)=>{
-                newUser.password = hash
-                User.create(newUser)
-                .then(() => res.json({msg: 'created successfully'}))
-                .catch(err =>res.send(err))
-            })
-        }else{ res.json({msg:'email already used'})}
+    User.findOne({username:req.body.username})
+    .then(username=>{
+        if(!username){
+            User.findOne({email:req.body.email})
+            .then(email=>{
+                if(!email){
+                    bcrypt.hash(req.body.password , 10 ,(err, hash)=>{
+                        newUser.password = hash
+                        User.create(newUser)
+                        .then(() => res.json({msg: 'created successfully'}))
+                        .catch(err =>res.send(err))
+                    })
+                }else{ res.json({msg:'email already used'})}
+            }).catch(err=>res.send(err))
+        }else{
+            res.json({msg:'username already used'})
+        }
     }).catch(err=>res.send(err))
 })
 
