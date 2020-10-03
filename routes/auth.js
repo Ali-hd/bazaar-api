@@ -20,7 +20,7 @@ router.post('/login', function(req,res,next){
             }
             
             let userData = { id:user._id , admin : user.admin, username:user.username }
-            const token = jwt.sign(userData,process.env.JWT_SECRET,{expiresIn: 60 * 60 * 24});
+            const token = jwt.sign(userData,process.env.JWT_SECRET,{expiresIn: '30 days'});
 
             return res.json({token, user});
         });
